@@ -101,10 +101,12 @@ export const StatsBar: React.FC<StatsBarProps> = ({
             <div className="flex items-center gap-1 text-[11px] text-slate-400 dark:text-slate-500 mt-0.5">
               <span>Feed:</span>
               <span className="text-slate-600 dark:text-slate-300 font-medium">
-                {backendConfig.mode === 'demo_live'
+                {backendConfig.mode === 'lta_datamall'
+                  ? 'LTA Serverless (/api/carparkavailability)'
+                  : backendConfig.mode === 'demo_live'
                   ? 'Real-Time Simulation Engine'
                   : backendConfig.mode === 'datagov_direct'
-                  ? 'Data.gov.sg LTA Stream'
+                  ? 'Data.gov.sg Direct Stream'
                   : 'Custom Backend API'}
               </span>
             </div>

@@ -182,3 +182,74 @@ export function estimateParkingFee(hourlyRate: number, durationMinutes: number, 
   const billableHours = Math.ceil(durationMinutes / 30) * 0.5;
   return Math.round(billableHours * hourlyRate * 100) / 100;
 }
+
+/**
+ * Checks server health and whether LTA DataMall AccountKey is configured
+ */
+export async function checkApiHealth(): Promise<{
+  status: string;
+  ltaDataMallKeyConfigured: boolean;
+  timestamp?: string;
+  message?: string;
+}> {
+  try {
+    const res = await fetch('/api/health');
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return await res.json();
+  } catch {
+    return {
+      status: 'error',
+      ltaDataMallKeyConfigured: false,
+      message: 'Unable to reach /api/health endpoint',
+    };
+  }
+}
+
+/**
+ * Calls serverless /api/carparkavailability proxy to get real-time LTA DataMall availability
+ */
+export async function fetchLtaDataMallAvailability(accountKey?: string): Promise<{
+  success: boolean;
+  status: number;
+  totalRecords?: number;
+  data?: unknown[];
+  error?: string;
+  source?: string;
+}> {
+  try {
+    const headers: Record<string, string> = {
+      Accept: 'application/json',
+    };
+    if (accountKey) {
+      headers['AccountKey'] = accountKey;
+    }
+
+    const res = await fetch('/api/carparkavailability?fetchAll=true', {
+      method: 'GET',
+      headers,
+    });
+
+    const json = await res.json();
+    if (!res.ok) {
+      return {
+        success: false,
+        status: res.status,
+        error: json.message || `API error ${res.status}`,
+      };
+    }
+
+    return {
+      success: true,
+      status: res.status,
+      totalRecords: json.totalRecords || json.data?.length || 0,
+      data: json.data || [],
+      source: json.source,
+    };
+  } catch (err: unknown) {
+    return {
+      success: false,
+      status: 0,
+      error: err instanceof Error ? err.message : 'Network error reaching /api/carparkavailability',
+    };
+  }
+}

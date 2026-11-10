@@ -59,7 +59,7 @@ export interface Carpark {
 }
 
 export interface BackendConfig {
-  mode: 'demo_live' | 'datagov_direct' | 'custom_endpoint';
+  mode: 'demo_live' | 'lta_datamall' | 'datagov_direct' | 'custom_endpoint';
   customEndpointUrl: string;
   autoRefreshInterval: number; // seconds, 0 = off
   lastSyncTime?: string;

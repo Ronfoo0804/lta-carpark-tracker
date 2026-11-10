@@ -11,6 +11,7 @@ import { Carpark, RegionArea, BackendConfig } from './types/carpark';
 import {
   simulateRealtimeLotChanges,
   fetchDataGovAvailability,
+  fetchLtaDataMallAvailability,
 } from './services/carparkService';
 import {
   Layers,
@@ -103,7 +104,34 @@ export default function App() {
   // Trigger manual refresh
   const handleManualRefresh = useCallback(async () => {
     setIsRefreshing(true);
-    if (backendConfig.mode === 'datagov_direct') {
+    if (backendConfig.mode === 'lta_datamall') {
+      const ltaRes = await fetchLtaDataMallAvailability();
+      if (ltaRes.success && Array.isArray(ltaRes.data) && ltaRes.data.length > 0) {
+        const lotMap = new Map<string, number>();
+        (ltaRes.data as Array<{ carparkNo?: string; availableLots?: number }>).forEach((item) => {
+          if (item.carparkNo && typeof item.availableLots === 'number') {
+            lotMap.set(item.carparkNo.toUpperCase(), item.availableLots);
+          }
+        });
+
+        setCarparks((prev) =>
+          prev.map((cp) => {
+            if (lotMap.has(cp.carparkNo.toUpperCase())) {
+              const liveAvail = lotMap.get(cp.carparkNo.toUpperCase())!;
+              return {
+                ...cp,
+                availableLots: liveAvail,
+                lastUpdated: new Date().toLocaleTimeString('en-SG', { hour12: false }),
+              };
+            }
+            return cp;
+          })
+        );
+      } else {
+        // Fallback simulation if key not configured
+        setCarparks((prev) => simulateRealtimeLotChanges(prev));
+      }
+    } else if (backendConfig.mode === 'datagov_direct') {
       const govData = await fetchDataGovAvailability();
       if (govData.success && govData.rawItems) {
         // Merge available numbers from data.gov.sg
